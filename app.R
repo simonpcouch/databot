@@ -68,7 +68,7 @@ server <- function(input, output, session) {
       if (output$type == "source") {
         next  # Skip source code since we already showed it
       } else if (output$type == "recordedplot") {
-        md <- c(md, flush_and_add(sprintf("![Plot](data:%s,%s)", output$mime, output$content)))
+        md <- c(md, flush_and_add(sprintf("![Plot](data:%s;base64,%s)", output$mime, output$content)))
         text_buffer <- character()
       } else {
         if (output$type == "error") {
@@ -102,22 +102,44 @@ server <- function(input, output, session) {
   }
 
   chat <- chat_claude(system_prompt, model = "claude-3-5-sonnet-latest")
-  chat$register_tool(tool(
-    run_r_code,
-    "Executes R code in the current session",
-    code = type_string("R code to execute")
-  ))
 
   observeEvent(input$chat_user_input, {
-    stream <- chat$stream_async(input$chat_user_input)
-    chat_append("chat", stream) |> promises::finally(~{
-      cat("\n\n\n")
-      print(chat)
-      print(chat$tokens())
-      message("Total input tokens: ", sum(chat$tokens()[, "input"]))
-      message("Total output tokens: ", sum(chat$tokens()[, "output"]))
-      message("Total tokens: ", sum(chat$tokens()))
-    })
+    llm_input <- list(input$chat_user_input)
+    while (TRUE) {
+      resp <- chat$extract_data(!!!llm_input, type = type_object(
+        "The response to send back to the user; can include markdown and/or R code for the user to execute and send back the results. If both are provided, the markdown will be displayed before the code is displayed and run.",
+        markdown = type_string("Markdown to display before the R code is executed.", required = TRUE),
+        r_code = type_string("R code to execute and display the results.", required = FALSE)
+      ))
+      if (!is.null(resp$markdown)) {
+        chat_append("chat", resp$markdown)
+      }
+      if (!is.null(resp$r_code)) {
+        chat_append("chat", paste(c("```r", resp$r_code, "```\n"), collapse = "\n"))
+        result <- evaluate_r_code(resp$r_code)
+        parts <- output_to_elmer_content(result)
+        chat_append_message("chat", list(role = "assistant", content = ""), chunk = "start")
+        for (part in parts) {
+          if (inherits(part, "elmer::ContentText")) {
+            chat_append_message("chat", list(role = "assistant", content = part@text), chunk = TRUE)
+          } else if (inherits(part, "elmer::ContentImageInline")) {
+            chat_append_message("chat", list(role = "assistant", content = sprintf("<img alt=\"A plot\" src=\"data:%s;base64,%s\">", part@type, part@data)), chunk = TRUE)
+          } else {
+            stop("Unknown part type: ", class(part)[[1]])
+          }
+        }
+        chat_append_message("chat", list(role = "assistant", content = ""), chunk = "end")
+        llm_input <- parts
+        next
+      }
+      break
+    }
+    cat("\n\n\n")
+    print(chat)
+    print(chat$tokens())
+    message("Total input tokens: ", sum(chat$tokens()[, "input"]))
+    message("Total output tokens: ", sum(chat$tokens()[, "output"]))
+    message("Total tokens: ", sum(chat$tokens()))
   })
 }
 

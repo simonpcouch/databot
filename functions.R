@@ -30,7 +30,8 @@ evaluate_r_code <- function(code) {
     envir = globalenv(), # evaluate in the global environment
     stop_on_error = 1, # stop on first error
     log_echo = TRUE,
-    log_warning = FALSE
+    log_warning = FALSE,
+    output_handler = evaluate::new_output_handler(value = identity)
   )
   
   # Close the graphics device
@@ -43,33 +44,39 @@ evaluate_r_code <- function(code) {
   )
   
   for (output in outputs) {
-    entry <- list(type = class(output)[1])
+    entry <- list(type = class(output)[[1]])
     
     if (inherits(output, "source")) {
+      entry$type <- "source"
       entry$content <- as.character(output)
     } else if (inherits(output, "warning")) {
+      entry$type <- "warning"
       entry$content <- conditionMessage(output)
     } else if (inherits(output, "message")) {
+      entry$type <- "message"
       entry$content <- conditionMessage(output)
     } else if (inherits(output, "error")) {
+      entry$type <- "error"
       entry$content <- conditionMessage(output)
     } else if (inherits(output, "character")) {
+      entry$type <- "text"
       entry$content <- output
-    } else if (inherits(output, "value")) {
-      entry$content <- utils::capture.output(print(output))
     } else if (inherits(output, "recordedplot")) {
+      entry$type <- "recordedplot"
       # Save the plot to a PNG file
-      # plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
-      # png(plot_file, width = 640, height = 480)
-      plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".svg")
-      svg(plot_file, width = 7, height = 5)
+      plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
+      png(plot_file, width = 640, height = 480)
       replayPlot(output)
       dev.off()
       
       # Convert the plot to base64
       plot_data <- base64enc::base64encode(plot_file)
       entry$content <- plot_data
-      entry$mime <- "image/svg+xml;base64"
+      entry$mime <- "image/png;base64"
+    } else {
+      entry$type <- "value"
+      entry$content <- utils::capture.output(print(output))
+      entry$value <- output
     }
     
     result$outputs[[length(result$outputs) + 1]] <- entry

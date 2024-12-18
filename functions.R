@@ -43,20 +43,27 @@ evaluate_r_code <- function(code) {
   )
   
   for (output in outputs) {
+    str(output)
     entry <- list(type = class(output)[1])
     
     if (inherits(output, "source")) {
       entry$content <- as.character(output)
+      entry$type <- "source"
     } else if (inherits(output, "warning")) {
       entry$content <- conditionMessage(output)
+      entry$type <- "warning"
     } else if (inherits(output, "message")) {
       entry$content <- conditionMessage(output)
+      entry$type <- "message"
     } else if (inherits(output, "error")) {
       entry$content <- conditionMessage(output)
+      entry$type <- "error"
     } else if (inherits(output, "character")) {
       entry$content <- output
+      entry$type <- "character"
     } else if (inherits(output, "value")) {
       entry$content <- utils::capture.output(print(output))
+      entry$type <- "value"
     } else if (inherits(output, "recordedplot")) {
       # Save the plot to a PNG file
       plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
@@ -68,6 +75,7 @@ evaluate_r_code <- function(code) {
       plot_data <- base64enc::base64encode(plot_file)
       entry$content <- plot_data
       entry$mime <- "image/png"
+      entry$type <- "recordedplot"
     }
     
     result$outputs[[length(result$outputs) + 1]] <- entry
@@ -78,7 +86,6 @@ evaluate_r_code <- function(code) {
 
 output_to_elmer_content <- function(result) {
   contents <- lapply(result$outputs, function(output) {
-    print(output$type)
     switch(output$type,
       source = NULL,
       error = paste0("**Error:** ", paste(output$content, collapse = "\n")),
@@ -91,7 +98,7 @@ output_to_elmer_content <- function(result) {
         data = output$content
       ),
       {
-        print(output)
+        print(class(output))
         message("Ignoring output type: ", output$type)
       }
     )

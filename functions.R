@@ -59,62 +59,21 @@ evaluate_r_code <- function(code) {
       entry$content <- utils::capture.output(print(output))
     } else if (inherits(output, "recordedplot")) {
       # Save the plot to a PNG file
-      plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
-      png(plot_file, width = 640, height = 480)
+      # plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
+      # png(plot_file, width = 640, height = 480)
+      plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".svg")
+      svg(plot_file, width = 7, height = 5)
       replayPlot(output)
       dev.off()
       
       # Convert the plot to base64
       plot_data <- base64enc::base64encode(plot_file)
       entry$content <- plot_data
-      entry$mime <- "image/png"
+      entry$mime <- "image/svg+xml;base64"
     }
     
     result$outputs[[length(result$outputs) + 1]] <- entry
   }
   
   result
-}
-
-output_to_elmer_content <- function(result) {
-  contents <- lapply(result$outputs, function(output) {
-    print(output$type)
-    switch(output$type,
-      source = NULL,
-      error = paste0("**Error:** ", paste(output$content, collapse = "\n")),
-      warning = paste0("**Warning:** ", paste(output$content, collapse = "\n")),
-      message = paste(output$content, collapse = "\n"),
-      character = paste(output$content, collapse = "\n"),
-      value = paste(output$content, collapse = "\n"),
-      recordedplot = elmer::ContentImageInline(
-        type = output$mime,
-        data = output$content
-      ),
-      {
-        print(output)
-        message("Ignoring output type: ", output$type)
-      }
-    )
-  })
-
-  coalesced <- Reduce(function(accum, elem) {
-    if (is.null(elem)) {
-      accum
-    } else if (is.character(elem) && length(accum) > 0 && is.character(accum[length(accum)])) {
-      accum[length(accum)] <- paste0(
-        c(accum[length(accum)], elem),
-        collapse = "\n"
-      )
-    } else {
-      c(accum, list(elem))
-    }
-  }, contents, list())
-
-  lapply(coalesced, function(content) {
-    if (is.character(content)) {
-      elmer::ContentText(content)
-    } else {
-      content
-    }
-  })
 }

@@ -31,7 +31,18 @@ evaluate_r_code <- function(code) {
     stop_on_error = 1, # stop on first error
     log_echo = TRUE,
     log_warning = FALSE,
-    output_handler = evaluate::new_output_handler(value = identity)
+    output_handler = evaluate::new_output_handler(
+      value = function(value, visible, lookup_env) {
+        if (visible) {
+          # Mostly to get ggplot2 to plot
+          # Find the appropriate S3 method for `print` using class(value)
+          capture.output(print(value))
+          value
+        } else {
+          invisible(value)
+        }
+      }
+    )
   )
   
   # Close the graphics device
@@ -72,7 +83,7 @@ evaluate_r_code <- function(code) {
       # Convert the plot to base64
       plot_data <- base64enc::base64encode(plot_file)
       entry$content <- plot_data
-      entry$mime <- "image/png;base64"
+      entry$mime <- "image/png"
     } else {
       entry$type <- "value"
       entry$content <- utils::capture.output(print(output))

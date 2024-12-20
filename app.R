@@ -2,6 +2,7 @@ library(shiny)
 library(bslib)
 library(elmer)
 library(shinychat)
+library(tidyverse)
 
 op <- options(elmer_verbosity = 2)
 Sys.setenv(NO_COLOR = "1")
@@ -174,11 +175,11 @@ server <- function(input, output, session) {
           out_img(output$mime, output$content)
         } else {
           if (output$type == "error") {
-            out_txt(sprintf("Error: %s", paste(output$content, collapse = "\n")))
+            out_txt(sprintf("Error: %s\n", paste(output$content, collapse = "\n")))
           } else if (output$type == "warning") {
-            out_txt(sprintf("Warning: %s", paste(output$content, collapse = "\n")))
+            out_txt(sprintf("Warning: %s\n", paste(output$content, collapse = "\n")))
           } else if (output$type == "message") {
-            out_txt(sprintf("%s", paste(output$content, collapse = "\n")))
+            out_txt(sprintf("%s\n", paste(output$content, collapse = "\n")))
           } else if (output$type == "text") {
             out_txt(output$content)
           } else if (output$type == "value") {

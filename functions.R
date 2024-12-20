@@ -46,9 +46,6 @@ evaluate_r_code <- function(code) {
     )
   )
   
-  # Close the graphics device
-  dev.off()
-  
   # Process the outputs into a structured format
   result <- list(
     timestamp = "2024-12-10T11:31:12-08:00",

@@ -3,7 +3,8 @@ library(bslib)
 library(elmer)
 library(shinychat)
 
-options(elmer_verbosity = 2)
+op <- options(elmer_verbosity = 2)
+Sys.setenv(NO_COLOR = "1")
 
 local(env = globalenv(), {
   if (!file.exists("data/book.csv")) {
@@ -17,6 +18,8 @@ local(env = globalenv(), {
 })
 
 source("functions.R")
+
+default_turns <- readRDS("greeting.rds")
 
 ui <- page_fillable(
   tags$link(href = "style.css", rel = "stylesheet"),
@@ -40,7 +43,8 @@ server <- function(input, output, session) {
   #' @param filename The desired filename of the report. Should end in `.qmd`.
   #' @param content The full content of the report, as a UTF-8 string.
   create_quarto_report <- function(filename, content) {
-    dest <- tempfile(tools::file_path_sans_ext(filename), fileext = ".qmd")
+    dir.create(here::here("reports"), showWarnings = FALSE)
+    dest <- file.path("reports", basename(filename))
     # TODO: Ensure UTF-8 encoding, even on Windows
     writeLines(content, dest)
     message("Saved report to ", dest)
@@ -60,8 +64,13 @@ server <- function(input, output, session) {
   #' @returns The results of the evaluation
   run_r_code <- function(code) {
     shiny::withLogErrors({
+      at_line_start <- TRUE
       emit <- function(str, end = "\n\n") {
         str <- paste0(paste(str, collapse = "\n"), end)
+        if (nchar(str) == 0) {
+          return()
+        }
+        at_line_start <<- substr(str, nchar(str), nchar(str)) == "\n"
         chat_append_message("chat",
           list(role = "assistant", content = str),
           chunk = TRUE, operation = "append"
@@ -78,7 +87,9 @@ server <- function(input, output, session) {
       start_code_block <- function() {
         if (!in_code_block) {
           in_code_block <<- TRUE
-          emit("```", end = "\n")
+          # use ```text to prevent client-side highlighting. If we don't do
+          # this, the colors get pretty randomly assigned.
+          emit("````text", end = "\n")
           stopifnot(length(txt_buffer) == 0)
         }
       }
@@ -89,7 +100,12 @@ server <- function(input, output, session) {
           in_code_block <<- FALSE
 
           # For user
-          emit("```")
+          if (!at_line_start) {
+            # If the last thing in the buffer isn't a newline, add one.
+            # If we don't do this then the code block might not end.
+            emit("")
+          }
+          emit("````")
 
           # For model
           result <<- c(result, list(list(type = "text", text = paste0(
@@ -119,8 +135,12 @@ server <- function(input, output, session) {
       out_df <- function(df) {
         end_code_block()
         # For the model
-        result <<- c(result, list(list(type = "text", text = jsonlite::toJSON(df))))
+        df_json <- encode_df_for_model(df, max_rows = 100, show_end = 10)
+        result <<- c(result, list(list(type = "text", text = df_json)))
         # For human
+        # TODO: Make sure human sees same EXACT rows as model, this includes omitting the same rows
+        op <- options(knitr.kable.max_rows = 100)
+        on.exit(options(op), add = TRUE, after = FALSE)
         md_tbl <- paste0(
           collapse = "\n",
           knitr::kable(df, format = "html", table.attr = "class=\"data-frame table table-sm table-striped\"")
@@ -131,8 +151,16 @@ server <- function(input, output, session) {
       out_txt <- function(txt) {
         start_code_block()
         txt_buffer <<- c(txt_buffer, txt)
-        emit(txt)
+        emit(txt, end = "")
       }
+
+      # # This doesn't work yet--shinychat can't show htmlwidgets
+      # out_widget <- function(widget) {
+      #   chat_append("chat",
+      #     list(role = "assistant", content = htmltools::as.tags(widget)),
+      #     chunk = TRUE, operation = "append"
+      #   )
+      # }
 
       emit(paste0("```r\n", code, "\n```"))
 
@@ -156,6 +184,8 @@ server <- function(input, output, session) {
           } else if (output$type == "value") {
             if (inherits(output$value, "data.frame")) {
               out_df(output$value)
+            # } else if (inherits(output$value, "htmlwidget")) {
+            #   out_widget(output$value)
             } else {
               out_txt(output$content)
             }
@@ -172,7 +202,7 @@ server <- function(input, output, session) {
     })
   }
 
-  chat <- chat_claude(system_prompt, model = "claude-3-5-sonnet-latest")
+  chat <- chat_claude(system_prompt, model = "claude-3-5-sonnet-latest", turns = default_turns)
   chat$register_tool(tool(
     run_r_code,
     "Executes R code in the current session",
@@ -185,6 +215,8 @@ server <- function(input, output, session) {
     content = type_string("The full content of the report, as a UTF-8 string.")
   ))
 
+  chat_append("chat", default_turns[[2]]@contents[[1]]@text)
+
   observeEvent(input$chat_user_input, {
     stream <- chat$stream_async(input$chat_user_input)
     chat_append("chat", stream) |> promises::finally(~ {
@@ -194,6 +226,7 @@ server <- function(input, output, session) {
       message("Total input tokens: ", sum(chat$tokens()[, "input"]))
       message("Total output tokens: ", sum(chat$tokens()[, "output"]))
       message("Total tokens: ", sum(chat$tokens()))
+      last_chat <<- chat
     })
   })
 }

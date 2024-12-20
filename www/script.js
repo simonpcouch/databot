@@ -7,4 +7,4 @@ $(document).on("click", "span.suggested-prompt", function(e) {
       chat_container.input.setInputValue(prompt);
     }
   }
-})
+});

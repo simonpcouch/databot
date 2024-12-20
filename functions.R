@@ -16,13 +16,14 @@ evaluate_r_code <- function(code) {
   # Create a temporary directory for plots
   tmp_dir <- tempfile("reval")
   dir.create(tmp_dir)
-  on.exit(unlink(tmp_dir, recursive = TRUE))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE, after = FALSE)
   
   # Set up graphics device
   png_file <- file.path(tmp_dir, "Rplot%03d.png")
-  dev_num <- dev.cur()
-  png(png_file, width = 800, height = 600)
+  png(png_file, width = 640, height = 480)
   dev.control("enable")
+  dev_num <- dev.cur()
+  on.exit(dev.off(dev_num), add = TRUE, after = FALSE)
   
   # Evaluate the code and capture all outputs
   outputs <- evaluate::evaluate(
@@ -74,11 +75,18 @@ evaluate_r_code <- function(code) {
       entry$content <- output
     } else if (inherits(output, "recordedplot")) {
       entry$type <- "recordedplot"
+
       # Save the plot to a PNG file
       plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
       png(plot_file, width = 640, height = 480)
-      replayPlot(output)
-      dev.off()
+      tryCatch(
+        {
+          replayPlot(output)
+        },
+        finally = {
+          dev.off()
+        }
+      )
       
       # Convert the plot to base64
       plot_data <- base64enc::base64encode(plot_file)
@@ -94,4 +102,24 @@ evaluate_r_code <- function(code) {
   }
   
   result
+}
+
+encode_df_for_model <- function(df, max_rows = 100, show_end = 10) {
+  if (nrow(df) == 0) {
+    return(paste(collapse = "\n", capture.output(print(tibble::as.tibble(df)))))
+  }
+  if (nrow(df) <= max_rows) {
+    return(df_to_json(df))
+  }
+  head_rows <- df[1:max_rows, ]
+  tail_rows <- df[(nrow(df) - show_end + 1):nrow(df), ]
+  paste(collapse = "\n", c(
+    df_to_json(head_rows),
+    sprintf("... %d rows omitted ...", nrow(df) - max_rows),
+    df_to_json(tail_rows))
+  )
+}
+
+df_to_json <- function(df) {
+  jsonlite::toJSON(df, dataframe = "rows", na = "string")
 }

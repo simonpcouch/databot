@@ -7,20 +7,9 @@ library(tidyverse)
 op <- options(elmer_verbosity = 2)
 Sys.setenv(NO_COLOR = "1")
 
-local(env = globalenv(), {
-  if (!file.exists("data/book.csv")) {
-    stop("Run download_data.R first")
-  }
-  book <- readr::read_csv("data/book.csv")
-  broadcast_media <- readr::read_csv("data/broadcast_media.csv")
-  journalism <- readr::read_csv("data/journalism.csv")
-  leadership <- readr::read_csv("data/leadership.csv")
-  restaurant_and_chef <- readr::read_csv("data/restaurant_and_chef.csv")
-})
-
 source("functions.R")
 
-default_turns <- readRDS("greeting.rds")
+default_turns <- NULL
 
 ui <- page_fillable(
   tags$link(href = "style.css", rel = "stylesheet"),
@@ -29,15 +18,23 @@ ui <- page_fillable(
 )
 
 server <- function(input, output, session) {
-  ctx_vars <- describe_vars(c("book", "broadcast_media", "journalism", "leadership", "restaurant_and_chef"))
-  system_prompt <- paste(
-    c(
-      readLines("prompt.md", warn = FALSE),
-      "\n\n",
-      ctx_vars
-    ),
+  system_prompt_template <- paste(
+    readLines("prompt.md", encoding = "UTF-8", warn = FALSE),
     collapse = "\n"
   )
+  root_dir <- here::here()
+  llms_txt <- NULL
+  if (file.exists(here::here("llms.txt"))) {
+    llms_txt <- paste(
+      readLines(here::here("llms.txt"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+  }
+  system_prompt <- whisker::whisker.render(system_prompt_template, data = list(
+    has_project = TRUE, # TODO: Make this dynamic
+    has_llms_txt = TRUE,
+    llms_txt = llms_txt
+  ))
 
   #' Creates a Quarto report and displays it to the user
   #'
@@ -215,8 +212,6 @@ server <- function(input, output, session) {
     filename = type_string("The desired filename of the report. Should end in `.qmd`."),
     content = type_string("The full content of the report, as a UTF-8 string.")
   ))
-
-  chat_append("chat", default_turns[[2]]@contents[[1]]@text)
 
   observeEvent(input$chat_user_input, {
     stream <- chat$stream_async(input$chat_user_input)

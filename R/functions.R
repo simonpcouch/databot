@@ -12,6 +12,7 @@ describe_vars <- function(varnames) {
 #' Evaluate R code and capture all outputs in a structured format
 #' @param code Character string containing R code to evaluate
 #' @return List containing structured output information
+#' @noRd
 evaluate_r_code <- function(code) {
   # Create a temporary directory for plots
   tmp_dir <- tempfile("reval")

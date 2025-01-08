@@ -1,0 +1,14 @@
+^\.git$
+^\.gitignore$
+^\.Rproj\.user$
+^.*\.Rproj$
+^\.env$
+^\.Renviron$
+^TODO\.md$
+^_dev$
+^__pycache__$
+^logs$
+^reports$
+^\.DS_Store$
+^llms\.txt$
+^_dev$

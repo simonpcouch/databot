@@ -146,10 +146,10 @@ server <- function(input, output, session) {
         emit(md_tbl)
       }
 
-      out_txt <- function(txt) {
+      out_txt <- function(txt, end = "") {
         start_code_block()
         txt_buffer <<- c(txt_buffer, txt)
-        emit(txt, end = "")
+        emit(txt, end = end)
       }
 
       # # This doesn't work yet--shinychat can't show htmlwidgets
@@ -185,10 +185,10 @@ server <- function(input, output, session) {
             # } else if (inherits(output$value, "htmlwidget")) {
             #   out_widget(output$value)
             } else {
-              out_txt(output$content)
+              out_txt(output$content, end = "\n")
             }
           } else {
-            out_txt(output$content)
+            out_txt(output$content, end = "\n")
           }
         }
       }

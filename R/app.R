@@ -230,8 +230,8 @@ chat <- function() {
       content = type_string("The full content of the report, as a UTF-8 string.")
     ))
 
-    observeEvent(input$chat_user_input, {
-      stream <- chat$stream_async(input$chat_user_input)
+    start_chat_request <- function(user_input) {
+      stream <- chat$stream_async(user_input)
       chat_append("chat", stream) |> promises::finally(~ {
         cat("\n\n\n")
         # print(chat)
@@ -241,7 +241,14 @@ chat <- function() {
         message("Total tokens: ", sum(chat$tokens()))
         last_chat <<- chat
       })
+    }
+
+    observeEvent(input$chat_user_input, {
+      start_chat_request(input$chat_user_input)
     })
+
+    # Kick start the chat session
+    start_chat_request("Hello")
   }
 
   print(shinyApp(ui, server))

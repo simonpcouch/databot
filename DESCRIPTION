@@ -17,6 +17,7 @@ Imports:
     jsonlite,
     knitr,
     promises,
+    R6,
     rlang,
     shiny,
     shinychat,
@@ -28,4 +29,6 @@ Imports:
 Remotes:
     tidyverse/ellmer
 Suggests:
+    testthat (>= 3.0.0),
     tidyverse
+Config/testthat/edition: 3

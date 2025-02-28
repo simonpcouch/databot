@@ -79,63 +79,18 @@ chat <- function() {
     # @noRd
     run_r_code <- function(code) {
       shiny::withLogErrors({
-        at_line_start <- TRUE
-        emit <- function(str, end = "\n\n") {
-          str <- paste0(paste(str, collapse = "\n"), end)
-          if (nchar(str) == 0) {
-            return()
-          }
-          at_line_start <<- substr(str, nchar(str), nchar(str)) == "\n"
+        out <- MarkdownStreamer$new(function(md_text) {
           chat_append_message("chat",
-            list(role = "assistant", content = str),
+            list(role = "assistant", content = md_text),
             chunk = TRUE, operation = "append"
           )
-        }
+        })
+        on.exit(out$close(), add = TRUE, after = FALSE)
 
         # What gets returned to the LLM
         result <- list()
-        # Buffered up text for the current code block
-        txt_buffer <- character()
-        in_code_block <- FALSE
-
-        # If we're not in a code block, start one
-        start_code_block <- function() {
-          if (!in_code_block) {
-            in_code_block <<- TRUE
-            # use ```text to prevent client-side highlighting. If we don't do
-            # this, the colors get pretty randomly assigned.
-            emit("````text", end = "\n")
-            stopifnot(length(txt_buffer) == 0)
-          }
-        }
-
-        # If we're in a code block, end it (flush the buffer)
-        end_code_block <- function() {
-          if (in_code_block) {
-            in_code_block <<- FALSE
-
-            # For user
-            if (!at_line_start) {
-              # If the last thing in the buffer isn't a newline, add one.
-              # If we don't do this then the code block might not end.
-              emit("")
-            }
-            emit("````")
-
-            # For model
-            result <<- c(result, list(list(type = "text", text = paste0(
-              "```\n",
-              paste(txt_buffer, collapse = "\n\n"),
-              "\n```"
-            ))))
-
-            txt_buffer <<- character()
-          }
-          invisible()
-        }
 
         out_img <- function(media_type, b64data) {
-          end_code_block()
           result <<- c(result, list(list(
             type = "image",
             source = list(
@@ -144,11 +99,10 @@ chat <- function() {
               data = b64data
             )
           )))
-          emit(sprintf("![Plot](data:%s;base64,%s)", media_type, b64data))
+          out$md(sprintf("![Plot](data:%s;base64,%s)", media_type, b64data), TRUE, TRUE)
         }
 
         out_df <- function(df) {
-          end_code_block()
           # For the model
           df_json <- encode_df_for_model(df, max_rows = 100, show_end = 10)
           result <<- c(result, list(list(type = "text", text = df_json)))
@@ -160,24 +114,24 @@ chat <- function() {
             collapse = "\n",
             knitr::kable(df, format = "html", table.attr = "class=\"data-frame table table-sm table-striped\"")
           )
-          emit(md_tbl)
+          out$md(md_tbl, TRUE, TRUE)
         }
 
-        out_txt <- function(txt, end = "") {
-          start_code_block()
-          txt_buffer <<- c(txt_buffer, txt)
-          emit(txt, end = end)
+        out_txt <- function(txt, end = NULL) {
+          txt <- paste(txt, collapse = "\n")
+          if (txt == "") {
+            return()
+          }
+          if (!is.null(end)) {
+            txt <- paste0(txt, end)
+          }
+          result <<- c(result, list(list(type = "text", text = txt)))
+          out$code(txt)
         }
 
-        # # This doesn't work yet--shinychat can't show htmlwidgets
-        # out_widget <- function(widget) {
-        #   chat_append("chat",
-        #     list(role = "assistant", content = htmltools::as.tags(widget)),
-        #     chunk = TRUE, operation = "append"
-        #   )
-        # }
-
-        emit(paste0("```r\n", code, "\n```"))
+        out$code(code)
+        # End the source code block so the outputs all appear in a separate block
+        out$close()
 
         # Use the new evaluate_r_code function
         evaluated <- evaluate_r_code(code)
@@ -209,9 +163,6 @@ chat <- function() {
             }
           }
         }
-
-        # Flush the last code block, if any
-        end_code_block()
 
         I(result)
       })

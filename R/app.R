@@ -134,35 +134,7 @@ chat <- function() {
         out$close()
 
         # Use the new evaluate_r_code function
-        evaluated <- evaluate_r_code(code)
-
-        for (output in evaluated$outputs) {
-          if (output$type == "source") {
-            next # Skip source code since we already showed it
-          } else if (output$type == "recordedplot") {
-            out_img(output$mime, output$content)
-          } else {
-            if (output$type == "error") {
-              out_txt(sprintf("Error: %s\n", paste(output$content, collapse = "\n")))
-            } else if (output$type == "warning") {
-              out_txt(sprintf("Warning: %s\n", paste(output$content, collapse = "\n")))
-            } else if (output$type == "message") {
-              out_txt(sprintf("%s\n", paste(output$content, collapse = "\n")))
-            } else if (output$type == "text") {
-              out_txt(output$content)
-            } else if (output$type == "value") {
-              if (inherits(output$value, "data.frame")) {
-                out_df(output$value)
-              # } else if (inherits(output$value, "htmlwidget")) {
-              #   out_widget(output$value)
-              } else {
-                out_txt(output$content, end = "\n")
-              }
-            } else {
-              out_txt(output$content, end = "\n")
-            }
-          }
-        }
+        evaluate_r_code(code, on_console_out = out_txt, on_console_err = out_txt, on_plot = out_img, on_dataframe = out_df)
 
         I(result)
       })

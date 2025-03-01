@@ -13,6 +13,7 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
       private$callback <- callback
       private$in_code_block <- FALSE
       private$last_ends_with_newline <- TRUE
+      private$empty <- TRUE
     },
     
     #' @description
@@ -70,7 +71,12 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
       
       # Start code block if needed with proper spacing
       if (!private$in_code_block) {
-        private$send("```\n", TRUE, FALSE)
+        private$send(as_str(
+          # Unless this is the first content, period, make sure we're
+          # double-spaced from the previous content
+          if (!private$empty) "\n",
+          "```\n"
+        ), TRUE, FALSE)
         private$in_code_block <- TRUE
       }
       
@@ -94,6 +100,7 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
     callback = NULL,
     in_code_block = FALSE,
     last_ends_with_newline = TRUE,
+    empty = TRUE,
     
     #' @description
     #' Send text to the callback and update state
@@ -118,6 +125,10 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
       if (ensure_newline_after && !private$last_ends_with_newline) {
         private$callback("\n")
         private$last_ends_with_newline <- TRUE
+      }
+
+      if (private$empty) {
+        private$empty <- FALSE
       }
     },
     

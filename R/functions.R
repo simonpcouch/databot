@@ -13,7 +13,7 @@ describe_vars <- function(varnames) {
 #' @param code Character string containing R code to evaluate
 #' @return List containing structured output information
 #' @noRd
-evaluate_r_code <- function(code) {
+evaluate_r_code <- function(code, on_console_out, on_console_err, on_plot, on_dataframe) {
   # Create a temporary directory for plots
   tmp_dir <- tempfile("reval")
   dir.create(tmp_dir)
@@ -34,72 +34,61 @@ evaluate_r_code <- function(code) {
     log_echo = TRUE,
     log_warning = FALSE,
     output_handler = evaluate::new_output_handler(
-      value = function(value, visible, lookup_env) {
-        if (visible) {
-          # Mostly to get ggplot2 to plot
-          # Find the appropriate S3 method for `print` using class(value)
-          capture.output(print(value))
-          value
+      text = function(value) {
+        on_console_out(as_str(value))
+      },
+      graphics = function(recorded_plot) {
+        plot <- recorded_plot_to_png(recorded_plot)
+        on_plot(plot$mime, plot$content)
+      },
+      message = function(cond) {
+        on_console_out(as_str("Message: ", conditionMessage(cond), "\n"))
+      },
+      warning = function(cond) {
+        on_console_out(as_str("Warning: ", conditionMessage(cond), "\n"))
+      },
+      error = function(cond) {
+        on_console_out(as_str("Error: ", conditionMessage(cond), "\n"))
+      },
+      value = function(value) {
+        # Mostly to get ggplot2 to plot
+        # Find the appropriate S3 method for `print` using class(value)
+        if (is.data.frame(value)) {
+          on_dataframe(value)
         } else {
-          invisible(value)
+          printed_str <- as_str(capture.output(print(value)))
+          if (nchar(printed_str) > 0 && !grepl("\n$", printed_str)) {
+            printed_str <- paste0(printed_str, "\n")
+          }
+          on_console_out(printed_str)
         }
       }
     )
   )
-  
-  # Process the outputs into a structured format
-  result <- list(
-    timestamp = "2024-12-10T11:31:12-08:00",
-    outputs = list()
+}
+
+#' Save a recorded plot to base64 encoded PNG
+#' 
+#' @param recorded_plot Recorded plot to save
+#' @param ... Additional arguments passed to [png()]
+#' @noRd
+recorded_plot_to_png <- function(recorded_plot, ...) {
+  plot_file <- tempfile(fileext = ".png")
+  on.exit(if (plot_file != "" && file.exists(plot_file)) unlink(plot_file))
+
+  png(plot_file, ...)
+  tryCatch(
+    {
+      replayPlot(recorded_plot)
+    },
+    finally = {
+      dev.off()
+    }
   )
   
-  for (output in outputs) {
-    entry <- list(type = class(output)[[1]])
-    
-    if (inherits(output, "source")) {
-      entry$type <- "source"
-      entry$content <- as.character(output)
-    } else if (inherits(output, "warning")) {
-      entry$type <- "warning"
-      entry$content <- conditionMessage(output)
-    } else if (inherits(output, "message")) {
-      entry$type <- "message"
-      entry$content <- conditionMessage(output)
-    } else if (inherits(output, "error")) {
-      entry$type <- "error"
-      entry$content <- conditionMessage(output)
-    } else if (inherits(output, "character")) {
-      entry$type <- "text"
-      entry$content <- output
-    } else if (inherits(output, "recordedplot")) {
-      entry$type <- "recordedplot"
-
-      # Save the plot to a PNG file
-      plot_file <- tempfile(tmpdir = tmp_dir, fileext = ".png")
-      png(plot_file, width = 640, height = 480)
-      tryCatch(
-        {
-          replayPlot(output)
-        },
-        finally = {
-          dev.off()
-        }
-      )
-      
-      # Convert the plot to base64
-      plot_data <- base64enc::base64encode(plot_file)
-      entry$content <- plot_data
-      entry$mime <- "image/png"
-    } else {
-      entry$type <- "value"
-      entry$content <- utils::capture.output(print(output))
-      entry$value <- output
-    }
-    
-    result$outputs[[length(result$outputs) + 1]] <- entry
-  }
-  
-  result
+  # Convert the plot to base64
+  plot_data <- base64enc::base64encode(plot_file)
+  list(mime = "image/png", content = plot_data)
 }
 
 encode_df_for_model <- function(df, max_rows = 100, show_end = 10) {

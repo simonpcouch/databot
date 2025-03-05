@@ -14,17 +14,6 @@ describe_vars <- function(varnames) {
 #' @return List containing structured output information
 #' @noRd
 evaluate_r_code <- function(code, on_console_out, on_console_err, on_plot, on_dataframe) {
-  # Create a temporary directory for plots
-  tmp_dir <- tempfile("reval")
-  dir.create(tmp_dir)
-  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE, after = FALSE)
-  
-  # Set up graphics device
-  png_file <- file.path(tmp_dir, "Rplot%03d.png")
-  png(png_file, width = 640, height = 480)
-  dev.control("enable")
-  dev_num <- dev.cur()
-  on.exit(dev.off(dev_num), add = TRUE, after = FALSE)
   
   # Evaluate the code and capture all outputs
   outputs <- evaluate::evaluate(

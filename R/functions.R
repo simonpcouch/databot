@@ -31,7 +31,7 @@ evaluate_r_code <- function(code, on_console_out, on_console_err, on_plot, on_da
         on_plot(plot$mime, plot$content)
       },
       message = function(cond) {
-        on_console_out(as_str("Message: ", conditionMessage(cond), "\n"))
+        on_console_out(as_str(conditionMessage(cond), "\n"))
       },
       warning = function(cond) {
         on_console_out(as_str("Warning: ", conditionMessage(cond), "\n"))

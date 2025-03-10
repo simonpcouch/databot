@@ -156,11 +156,11 @@ chat <- function() {
     start_chat_request <- function(user_input) {
       stream <- chat$stream_async(user_input)
       chat_append("chat", stream) |> promises::finally(~ {
-        tokens <- chat$tokens()
+        tokens <- chat$tokens(include_system_prompt = FALSE)
         input <- sum(tokens$tokens[tokens$role == "user"])
         output <- sum(tokens$tokens[tokens$role == "assistant"])
 
-        cat("Turn ", nrow(tokens), " ----------------------------\n", sep = "")
+        cat(rule("Turn ", nrow(tokens) / 2), "\n", sep = "")
         cat("Total input tokens:  ", input, "\n", sep = "")
         cat("Total output tokens: ", output, "\n", sep = "")
         cat("Total tokens:        ", input + output, "\n", sep = "")

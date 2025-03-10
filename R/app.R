@@ -160,6 +160,7 @@ chat <- function() {
         input <- sum(tokens$tokens[tokens$role == "user"])
         output <- sum(tokens$tokens[tokens$role == "assistant"])
 
+        cat("\n")
         cat(rule("Turn ", nrow(tokens) / 2), "\n", sep = "")
         cat("Total input tokens:  ", input, "\n", sep = "")
         cat("Total output tokens: ", output, "\n", sep = "")

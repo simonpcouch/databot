@@ -14,14 +14,14 @@ describe_vars <- function(varnames) {
 #' @return List containing structured output information
 #' @noRd
 evaluate_r_code <- function(code, on_console_out, on_console_err, on_plot, on_dataframe) {
+  cat("Running code...\n")
+  cat(code, "\n", sep = "")
   
   # Evaluate the code and capture all outputs
-  outputs <- evaluate::evaluate(
+  evaluate::evaluate(
     code,
     envir = globalenv(), # evaluate in the global environment
     stop_on_error = 1, # stop on first error
-    log_echo = TRUE,
-    log_warning = FALSE,
     output_handler = evaluate::new_output_handler(
       text = function(value) {
         on_console_out(as_str(value))
@@ -54,6 +54,7 @@ evaluate_r_code <- function(code, on_console_out, on_console_err, on_plot, on_da
       }
     )
   )
+  invisible()
 }
 
 #' Save a recorded plot to base64 encoded PNG

@@ -72,10 +72,10 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
       # Start code block if needed with proper spacing
       if (!private$in_code_block) {
         private$send(as_str(
-          # Unless this is the first content, period, make sure we're
-          # double-spaced from the previous content
-          if (!private$empty) "\n",
-          "```\n"
+          # Make sure to double-newline from previous content. The leading "\n"
+          # is one, while private$send(ensure_newline_before=TRUE) provides the
+          # other.
+          "\n```\n"
         ), TRUE, FALSE)
         private$in_code_block <- TRUE
       }

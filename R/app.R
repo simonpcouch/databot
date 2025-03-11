@@ -22,37 +22,13 @@ chat <- function() {
   withr::local_options(ellmer_verbosity = 2)
   withr::local_envvar(NO_COLOR = "1")
 
-  default_turns <- NULL
-
   ui <- page_fillable(
     html_deps(),
     chat_ui("chat", fill = TRUE, height = "100%", width = "100%")
   )
 
   server <- function(input, output, session) {
-    system_prompt_template <- paste(
-      readLines(
-        system.file("prompt/prompt.md", package = "databot"),
-        encoding = "UTF-8",
-        warn = FALSE
-      ),
-      collapse = "\n"
-    )
-    root_dir <- here::here()
-    llms_txt <- NULL
-    if (file.exists(here::here("llms.txt"))) {
-      llms_txt <- paste(
-        readLines(here::here("llms.txt"), encoding = "UTF-8", warn = FALSE),
-        collapse = "\n"
-      )
-    }
-    system_prompt <- whisker::whisker.render(system_prompt_template, data = list(
-      has_project = TRUE, # TODO: Make this dynamic
-      has_llms_txt = TRUE,
-      llms_txt = llms_txt
-    ))
-
-    chat <- chat_bot(system_prompt, default_turns)
+    chat <- chat_bot()
     start_chat_request <- function(user_input) {
       stream <- chat$stream_async(user_input)
       chat_append("chat", stream) |> promises::finally(~ {

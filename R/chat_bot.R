@@ -1,4 +1,6 @@
 chat_bot <- function(system_prompt = NULL, default_turns = list()) {
+  system_prompt <- system_prompt %||% databot_prompt()
+  
   chat <- chat_claude(
     system_prompt,
     model = "claude-3-5-sonnet-latest",

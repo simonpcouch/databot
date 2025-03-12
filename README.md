@@ -1,5 +1,11 @@
 # Databot: Data exploration assistant for R
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/jcheng5/databot/actions/workflows/R-CMD-check.yaml/badge.svghttps://github.com/jcheng5/databot/actions/workflows/R-CMD-check.yaml/badge.svghttps://github.com/jcheng5/databot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jcheng5/databot/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/jcheng5/databot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jcheng5/databot/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/jcheng5/databot/graph/badge.svg)](https://app.codecov.io/gh/jcheng5/databot)
+<!-- badges: end -->
+
 Trying to make sense of a new pile of CSVs? Got a vision for a plot but can't quite figure out the right ggplot2 calls? Feeling stuck on finding interesting questions to ask of your data?
 
 Databot is an experimental AI assistant that is designed to come alongside you, and help you by performing tasks within your R session.

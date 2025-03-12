@@ -5,10 +5,10 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
     #' @param callback Function to process Markdown output, takes a single markdown argument
     initialize = function(callback) {
       if (!is.function(callback)) {
-        rlang::abort("`callback` must be a function")
+        abort("`callback` must be a function")
       }
       if (length(formals(callback)) != 1) {
-        rlang::abort("`callback` must accept exactly one argument")
+        abort("`callback` must accept exactly one argument")
       }
       private$callback <- callback
       private$in_code_block <- FALSE
@@ -24,7 +24,7 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
     md = function(text, ensure_newline_before = FALSE, ensure_newline_after = FALSE) {
       # Validate inputs
       if (!is.character(text)) {
-        rlang::abort("`text` must be a character vector")
+        abort("`text` must be a character vector")
       }
       
       # Skip empty text
@@ -56,7 +56,7 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
     code = function(text, ensure_newline_before = FALSE, ensure_newline_after = FALSE) {
       # Validate inputs
       if (!is.character(text)) {
-        rlang::abort("`text` must be a character vector")
+        abort("`text` must be a character vector")
       }
       
       # Skip empty text

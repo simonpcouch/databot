@@ -12,3 +12,6 @@
 ^\.DS_Store$
 ^llms\.txt$
 ^_dev$
+^LICENSE\.md$
+^\.github$
+^codecov\.yml$

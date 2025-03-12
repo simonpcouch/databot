@@ -7,7 +7,7 @@ NULL
 html_deps <- function() {
   htmltools::htmlDependency(
     "databot",
-    packageVersion("databot"),
+    utils::packageVersion("databot"),
     src = "www",
     package = "databot",
     script = "script.js",

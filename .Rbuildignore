@@ -13,3 +13,5 @@
 ^llms\.txt$
 ^_dev$
 ^LICENSE\.md$
+^\.github$
+^codecov\.yml$

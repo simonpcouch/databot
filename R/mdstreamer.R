@@ -140,3 +140,14 @@ MarkdownStreamer <- R6::R6Class("MarkdownStreamer",
     }
   )
 )
+
+NullStreamer <- R6::R6Class("MarkdownStreamer", public = list(
+  md = function(text, ...) {
+    invisible(self)
+  },
+  code = function(text, ... ) {
+    invisible(self)
+  },
+  close = function() {
+  }
+))

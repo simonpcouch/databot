@@ -34,7 +34,7 @@ evaluate_r_code <- function(code, on_console_out, on_console_err, on_plot, on_da
         if (is.data.frame(value)) {
           on_dataframe(value)
         } else {
-          printed_str <- as_str(capture.output(print(value)))
+          printed_str <- as_str(utils::capture.output(print(value)))
           if (nchar(printed_str) > 0 && !grepl("\n$", printed_str)) {
             printed_str <- paste0(printed_str, "\n")
           }
@@ -55,13 +55,13 @@ recorded_plot_to_png <- function(recorded_plot, ...) {
   plot_file <- tempfile(fileext = ".png")
   on.exit(if (plot_file != "" && file.exists(plot_file)) unlink(plot_file))
 
-  png(plot_file, ...)
+  grDevices::png(plot_file, ...)
   tryCatch(
     {
-      replayPlot(recorded_plot)
+      grDevices::replayPlot(recorded_plot)
     },
     finally = {
-      dev.off()
+      grDevices::dev.off()
     }
   )
   
@@ -72,7 +72,7 @@ recorded_plot_to_png <- function(recorded_plot, ...) {
 
 encode_df_for_model <- function(df, max_rows = 100, show_end = 10) {
   if (nrow(df) == 0) {
-    return(paste(collapse = "\n", capture.output(print(tibble::as.tibble(df)))))
+    return(paste(collapse = "\n", utils::capture.output(print(tibble::as.tibble(df)))))
   }
   if (nrow(df) <= max_rows) {
     return(df_to_json(df))

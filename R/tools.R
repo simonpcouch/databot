@@ -13,7 +13,7 @@ create_quarto_report <- function(filename, content) {
   rendered <- paste0(tools::file_path_sans_ext(dest), ".html")
   if (file.exists(rendered)) {
     message("Opening report in browser...")
-    browseURL(rendered)
+    utils::browseURL(rendered)
   }
   invisible(NULL)
 }

@@ -19,7 +19,7 @@ Imports:
     promises,
     R6,
     rlang,
-    shiny,
+    shiny (>= 1.10.0),
     shinychat,
     tibble,
     tools,

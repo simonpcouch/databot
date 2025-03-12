@@ -19,7 +19,6 @@ html_deps <- function() {
 #' 
 #' @export
 chat <- function() {
-  withr::local_options(ellmer_verbosity = 2)
   withr::local_envvar(NO_COLOR = "1")
 
   default_turns <- NULL

@@ -1,14 +1,3 @@
-describe_vars <- function(varnames) {
-  capture.output({
-    for (i in varnames) {
-      cat("Variable name: ", i, "\n", sep = "")
-      cat("str(", i, "):\n", sep = "")
-      rlang::inject(str(!!get(i, globalenv())))
-      cat("\n")
-    }
-  })
-}
-
 #' Evaluate R code and capture all outputs in a structured format
 #' @param code Character string containing R code to evaluate
 #' @return List containing structured output information

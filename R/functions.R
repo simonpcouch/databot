@@ -70,20 +70,38 @@ recorded_plot_to_png <- function(recorded_plot, ...) {
   list(mime = "image/png", content = plot_data)
 }
 
-encode_df_for_model <- function(df, max_rows = 100, show_end = 10) {
+split_df <- function(n, show_start = 20, show_end = 10) {
+  if (n <= show_start + show_end) {
+    return(list(
+      head = n,
+      skip = 0,
+      tail = 0
+    ))
+  } else {
+    return(list(
+      head = show_start,
+      skip = n - show_start - show_end,
+      tail = show_end
+    ))
+  }
+}
+
+encode_df_for_model <- function(df, max_rows = 20, show_end = 10) {
   if (nrow(df) == 0) {
     return(paste(collapse = "\n", utils::capture.output(print(tibble::as.tibble(df)))))
   }
-  if (nrow(df) <= max_rows) {
+
+  split <- split_df(nrow(df), show_start = max_rows, show_end = show_end)
+
+  if (split$skip == 0) {
     return(df_to_json(df))
   }
-  head_rows <- df[1:max_rows, ]
-  tail_rows <- df[(nrow(df) - show_end + 1):nrow(df), ]
+
   paste(collapse = "\n", c(
-    df_to_json(head_rows),
-    sprintf("... %d rows omitted ...", nrow(df) - max_rows),
-    df_to_json(tail_rows))
-  )
+    df_to_json(head(df, split$head)),
+    sprintf("... %d rows omitted ...", split$skip),
+    df_to_json(tail(df, split$tail))
+  ))
 }
 
 df_to_json <- function(df) {

@@ -48,21 +48,29 @@ run_r_code <- function(code) {
         data = b64data
       )
     )))
-    out$md(sprintf("![Plot](data:%s;base64,%s)", media_type, b64data), TRUE, TRUE)
+    out$md(sprintf("![Plot](data:%s;base64,%s)\n\n", media_type, b64data), TRUE, FALSE)
   }
 
   out_df <- function(df) {
+    ROWS_START <- 20
+    ROWS_END <- 10
+    
     # For the model
-    df_json <- encode_df_for_model(df, max_rows = 100, show_end = 10)
+    df_json <- encode_df_for_model(df, max_rows = ROWS_START, show_end = ROWS_END)
     result <<- c(result, list(list(type = "text", text = df_json)))
     # For human
-    # TODO: Make sure human sees same EXACT rows as model, this includes omitting the same rows
-    op <- options(knitr.kable.max_rows = 100)
-    on.exit(options(op), add = TRUE, after = FALSE)
+    # Make sure human sees same EXACT rows as model, this includes omitting the same rows
+    split <- split_df(nrow(df), show_start = ROWS_START, show_end = ROWS_END)
+    attrs <- "class=\"data-frame table table-sm table-striped\""
     md_tbl <- paste0(
       collapse = "\n",
-      knitr::kable(df, format = "html", table.attr = "class=\"data-frame table table-sm table-striped\"")
+      knitr::kable(head(df, split$head), format = "html", table.attr = attrs)
     )
+    if (split$skip > 0) {
+      md_tbl_skip <- sprintf("... %d rows omitted ...", split$skip)
+      md_tbl_tail <- knitr::kable(tail(df, split$tail), format = "html", table.attr = attrs)
+      md_tbl <- as_str(md_tbl, md_tbl_skip, md_tbl_tail)
+    }
     out$md(md_tbl, TRUE, TRUE)
   }
 

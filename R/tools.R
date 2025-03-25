@@ -26,9 +26,12 @@ create_quarto_report <- function(filename, content) {
 run_r_code <- function(code) {
   if (in_shiny()) {
     out <- MarkdownStreamer$new(function(md_text) {
-      chat_append_message("chat",
+      save_output_chunk(md_text)
+      chat_append_message(
+        "chat",
         list(role = "assistant", content = md_text),
-        chunk = TRUE, operation = "append"
+        chunk = TRUE,
+        operation = "append"
       )
     })
   } else {
@@ -40,23 +43,34 @@ run_r_code <- function(code) {
   result <- list()
 
   out_img <- function(media_type, b64data) {
-    result <<- c(result, list(list(
-      type = "image",
-      source = list(
-        type = "base64",
-        media_type = media_type,
-        data = b64data
-      )
-    )))
-    out$md(sprintf("![Plot](data:%s;base64,%s)\n\n", media_type, b64data), TRUE, FALSE)
+    result <<- c(
+      result,
+      list(list(
+        type = "image",
+        source = list(
+          type = "base64",
+          media_type = media_type,
+          data = b64data
+        )
+      ))
+    )
+    out$md(
+      sprintf("![Plot](data:%s;base64,%s)\n\n", media_type, b64data),
+      TRUE,
+      FALSE
+    )
   }
 
   out_df <- function(df) {
     ROWS_START <- 20
     ROWS_END <- 10
-    
+
     # For the model
-    df_json <- encode_df_for_model(df, max_rows = ROWS_START, show_end = ROWS_END)
+    df_json <- encode_df_for_model(
+      df,
+      max_rows = ROWS_START,
+      show_end = ROWS_END
+    )
     result <<- c(result, list(list(type = "text", text = df_json)))
     # For human
     # Make sure human sees same EXACT rows as model, this includes omitting the same rows
@@ -68,7 +82,11 @@ run_r_code <- function(code) {
     )
     if (split$skip > 0) {
       md_tbl_skip <- sprintf("... %d rows omitted ...", split$skip)
-      md_tbl_tail <- knitr::kable(tail(df, split$tail), format = "html", table.attr = attrs)
+      md_tbl_tail <- knitr::kable(
+        tail(df, split$tail),
+        format = "html",
+        table.attr = attrs
+      )
       md_tbl <- as_str(md_tbl, md_tbl_skip, md_tbl_tail)
     }
     out$md(md_tbl, TRUE, TRUE)
@@ -99,7 +117,7 @@ run_r_code <- function(code) {
         on_console_err = out_txt,
         on_plot = out_img,
         on_dataframe = out_df
-      )    
+      )
     })
   } else {
     evaluate_r_code(
@@ -108,7 +126,7 @@ run_r_code <- function(code) {
       on_console_err = out_txt,
       on_plot = out_img,
       on_dataframe = out_df
-    )  
+    )
   }
 
   I(result)

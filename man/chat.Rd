@@ -4,7 +4,12 @@
 \alias{chat}
 \title{Runs databot}
 \usage{
-chat()
+chat(new_session = FALSE)
+}
+\arguments{
+\item{new_session}{Logical. If \code{TRUE}, starts a new chat session. If \code{FALSE}
+(the default), restores the previous chat session (only within the current
+R process).}
 }
 \description{
 Runs databot

@@ -6,6 +6,25 @@
 [![Codecov test coverage](https://codecov.io/gh/jcheng5/databot/graph/badge.svg)](https://app.codecov.io/gh/jcheng5/databot)
 <!-- badges: end -->
 
+## fiestamigo
+
+> This branch of databot is intended to demonstrate a FIESTA assistant. Compared to databot, it also 1) inlines a bunch of context about FIESTA in the system prompt and 2) allows for perusing package documentation using the btw package.
+
+The `llms.txt` file pastes the package README as well as output of the following code:
+
+```r
+btw::btw(
+  "{FIESTA}",
+  vignette(package = "FIESTA"),
+  "{FIESTAutils}"
+)
+```
+
+On to the usual README...
+
+-----
+
+
 Trying to make sense of a new pile of CSVs? Got a vision for a plot but can't quite figure out the right ggplot2 calls? Feeling stuck on finding interesting questions to ask of your data?
 
 Databot is an experimental AI assistant that is designed to come alongside you, and help you by performing tasks within your R session.

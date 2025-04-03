@@ -10,8 +10,11 @@ RoxygenNote: 7.3.2
 Imports: 
     base64enc,
     bslib,
+    btw,
     ellmer,
     evaluate,
+    FIESTA,
+    FIESTAutils,
     here,
     htmltools,
     jsonlite,
@@ -28,7 +31,7 @@ Imports:
     withr
 Remotes:
     tidyverse/ellmer,
-    posit-dev/shinychat
+    posit-dev/btw
 Suggests:
     testthat (>= 3.0.0),
     tidyverse

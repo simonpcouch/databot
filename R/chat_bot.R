@@ -29,5 +29,9 @@ chat_bot <- function(system_prompt = NULL, default_turns = list()) {
     ),
     content = type_string("The full content of the report, as a UTF-8 string.")
   ))
+
+  # enable the model to read package documentation
+  btw::btw_register_tools(chat, "docs")
+
   chat
 }
